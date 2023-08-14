@@ -8,7 +8,7 @@ pygame.init()
 # Display settings
 windowSize = (900, 500)
 screen = pygame.display.set_mode(windowSize)
-pygame.display.set_caption('Sorting Algorithms Visualizer')
+pygame.display.set_caption('Sorting Algorithms GIF Generator')
 
 # Font
 baseFont = pygame.font.SysFont('Arial', 24)
@@ -256,14 +256,14 @@ delayBox     = SlideBox('Delay', grey, (105, 440, 112, 50))
 algorithmBox = DropdownBox('Algorithm', (242, 440, 140, 50), baseFont)
 playButton  = ButtonBox('res/playButton.png', (390, 440, 50, 50))
 stopButton = ButtonBox('res/stopButton.png', (390, 440, 50, 50))
-gifCheckBox = CheckBox('res/gifButton.png','res/gifButton2.png',"Output GIF", (500,440,50,50))
+#gifCheckBox = CheckBox('res/gifButton.png','res/gifButton2.png',"Output GIF", (500,440,50,50))
 
 
 def updateWidgets(event):
     sizeBox.update(event)
     delayBox.update(event)
     algorithmBox.update()
-    gifCheckBox.update()
+    #gifCheckBox.update()
     if do_sorting:
         stopButton.update()
     else:
@@ -289,7 +289,7 @@ def drawBottomMenu():
     sizeBox.draw()
     delayBox.draw()
     algorithmBox.draw()
-    gifCheckBox.draw()
+    #gifCheckBox.draw()
     if do_sorting:
         stopButton.draw()
     else:

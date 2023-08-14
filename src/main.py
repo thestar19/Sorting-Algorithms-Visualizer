@@ -118,8 +118,8 @@ def main():
 
         display.delay = (display.delayBox.value-display.delayBox.rect.x-6)/1000 # delay is in ms
         
-        #Check if user pressed button, if so then active GIF output
-        if display.gifCheckBox.isActive and not display.do_sorting:
+        #Start creating GIF
+        if display.do_sorting:
             try:
                 if int(display.sizeBox.text) > 1000:
                     #This is limitation because of RAM. size = 100 needs 2GB of RAM, so 120 is for some reason significantly higher
@@ -127,10 +127,10 @@ def main():
                 else:
                     if int(display.sizeBox.text) > 500:
                         print("Warning: Creating a GIF for array > 500 will require more than 8GB of memory")
-                    display.gifCheckBox.switch()
+                    #display.gifCheckBox.switch()
             except:
                 raise ValueError("Text in size field is not a number")
-            display.gifCheckBox.isActive = False
+            #display.gifCheckBox.isActive = False
             
         
         if display.playButton.isActive: # play button clicked
@@ -151,15 +151,14 @@ def main():
             except StopIteration:
                 pass
             #Check if user wants GIF, then delete temp files. No gif is possible becuase early stop
-            if display.gifCheckBox.checked:
+            if True:
                 deleteTempFiles()
                 GIF_picture_counter = 0
                 GIF_skip_image_counter = 0
                 
         #GIF needs it's own thing
-        if display.gifCheckBox.checked:
-            screenshot = pygame.Surface(GIF_WINDOW_SIZE)
-            screenshot.blit(display.screen, (0,0))
+        screenshot = pygame.Surface(GIF_WINDOW_SIZE)
+        screenshot.blit(display.screen, (0,0))
         
         if display.do_sorting and not display.paused: # sorting animation
             try:
@@ -167,7 +166,7 @@ def main():
                     numbers, redBar1, redBar2, blueBar1, blueBar2 = next(alg_iterator)
                     display.drawInterface(numbers, redBar1, redBar2, blueBar1, blueBar2)
                     #If GIF is to be output, a picture needs to be generated and saved temporarily
-                    if display.gifCheckBox.checked:
+                    if True:
                         #If less then 300, take every size/100 picture
                         #ergo size = 100 => every picture, size = 300 => every third picture
                         if int(display.sizeBox.text) <= 300:
@@ -189,7 +188,7 @@ def main():
             except StopIteration:
                 display.do_sorting = False
                 #If program stops because end of sorting, gif needs to be created if selected
-                if display.gifCheckBox.checked: #Check if GIF was requested
+                if True: #Check if GIF was requested
                     #Call function for GIF
                     CreateGIF(GIF_picture_counter,SCREENSHOT_FILENAME)
                     #Reset counter
