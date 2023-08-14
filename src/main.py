@@ -12,6 +12,16 @@ import gc
 # 2. widgets : sizeBox, delayBox, algorithmBox, playButton, stopButton
 
 
+#Todo:
+# Add looping option
+# Add time estimate
+# Make better number of pictures sorter
+# Create own git page with reference
+# Add log to window, stop using terminal
+# Add "speed" adjust eg FPS as option
+# Add more file types, eg MP4
+# Add option to print numbers in "bars"
+
 
 #Generating gifs requires placing files in subfolder and then loading them.
 #This deletes everything except gif
@@ -40,15 +50,20 @@ def CreateGIF(counter,SCREENSHOT_FILENAME):
     #This will start to load in individual pictures into gif engine
     #In theory, an optimization is possible here by streaming the data in smaller batches
     #This would save alot of memory
+    newGif = imageio.get_writer('sorting2.gif',format='GIF-PIL',mode='I',fps=100)
     try:
-        for filename in fileNames:
-            images.append(imageio.v2.imread(filename))
+        for (counter,filename) in enumerate(fileNames):
+            #images.append(imageio.v2.imread(filename))
+            newGif.append_data(imageio.v2.imread(filename))
+            if counter % 100 == 0:
+                print("Progress:" + str(counter) + "/" + str(len(fileNames)))
     except:
         raise EIO("Tried to create GIF, did not find sample pictures")
     #Output gif
-    imageio.mimsave('sorting.gif', images, format = 'GIF-PIL', fps = 100)
+    #imageio.mimsave('sorting.gif', images, format = 'GIF-PIL', fps = 100)
     #Del latest list, this does NOT decrease current RAM usage, 
     #but makes next round use the same memory area instead
+    newGif.close()
     del fileNames
     for item in images:
         del item
@@ -117,29 +132,24 @@ def main():
             display.updateWidgets(event)
 
         display.delay = (display.delayBox.value-display.delayBox.rect.x-6)/1000 # delay is in ms
-        
-        #Start creating GIF
-        if display.do_sorting:
+
+        if display.playButton.isActive: # play button clicked
             try:
                 if int(display.sizeBox.text) > 1000:
-                    #This is limitation because of RAM. size = 100 needs 2GB of RAM, so 120 is for some reason significantly higher
+                    # This is limitation because of RAM. size = 100 needs 2GB of RAM, so 120 is for some reason significantly higher
                     print("GIF cannot be created for size > 1000")
+                elif int(display.sizeBox.text) > 1000:
+                    print("Warning: Creating a GIF for array > 500 will require more than 8GB of memory")
                 else:
-                    if int(display.sizeBox.text) > 500:
-                        print("Warning: Creating a GIF for array > 500 will require more than 8GB of memory")
-                    #display.gifCheckBox.switch()
+                    display.do_sorting = True
+                    display.playButton.isActive = False
+                    current_alg = display.algorithmBox.get_active_option()
+                    display.numBars = int(display.sizeBox.text)
+                    numbers = [randint(10, 400) for i in range(display.numBars)]  # random list to be sorted
+                    alg_iterator = algorithmsDict[current_alg](numbers, 0, display.numBars - 1)  # initialize iterator
+                display.playButton.isActive = False
             except:
                 raise ValueError("Text in size field is not a number")
-            #display.gifCheckBox.isActive = False
-            
-        
-        if display.playButton.isActive: # play button clicked
-            display.playButton.isActive = False
-            display.do_sorting = True
-            current_alg = display.algorithmBox.get_active_option()
-            display.numBars = int(display.sizeBox.text)
-            numbers = [randint(10, 400) for i in range(display.numBars)] # random list to be sorted
-            alg_iterator = algorithmsDict[current_alg](numbers, 0, display.numBars-1) # initialize iterator
 
         if display.stopButton.isActive: # stop button clicked
             display.stopButton.isActive = False
