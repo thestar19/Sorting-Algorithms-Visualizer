@@ -61,6 +61,8 @@ class TextBox(InputBox):
         if self.isActive and event.type == pygame.KEYDOWN:
             if   event.key == pygame.K_BACKSPACE: self.text = self.text[:-1]
             elif event.unicode.isdigit()        : self.text += event.unicode
+        if self.text == "0":
+            self.text = "Inf"
         
 
 class SlideBox(InputBox):
@@ -82,8 +84,10 @@ class SlideBox(InputBox):
         self.start  = self.rect.x + 6
         self.end    = self.rect.x + self.rect.w - 6
         self.value += self.start - previousStart
+        delay = self.value*2
         
         if self.isActive:
+            self.name = "Delay:" + str(int(self.value)*2) + "ms"
             if self.clicked:
                 if self.start <= self.mousePos[0] <= self.end: self.value = self.mousePos[0]
         
@@ -123,7 +127,7 @@ class ButtonBox(Box):
         self.img = pygame.image.load(img_path)
     
     def draw(self):
-        self.rect.x = algorithmBox.rect.x + algorithmBox.rect.w + 20
+        self.rect.x = loopBox.rect.x + loopBox.rect.w + 20
         screen.blit(self.img, (self.rect.x, self.rect.y))
 
     def update(self):
@@ -252,15 +256,17 @@ timer_space_bar   = 0
 
 # Input Boxes
 sizeBox      = TextBox('Size', grey, (30, 440, 50, 50), '100')
-delayBox     = SlideBox('Delay', grey, (105, 440, 112, 50))
-algorithmBox = DropdownBox('Algorithm', (242, 440, 140, 50), baseFont)
-playButton  = ButtonBox('res/playButton.png', (390, 440, 50, 50))
-stopButton = ButtonBox('res/stopButton.png', (390, 440, 50, 50))
+loopBox      = TextBox('Loops', grey, (400, 440, 50, 50), '0')
+delayBox     = SlideBox("Delay:" + "200" + "ms", grey, (105, 440, 112, 50))
+algorithmBox = DropdownBox('Algorithm', (410, 440, 140, 50), baseFont)
+playButton  = ButtonBox('res/playButton.png', (800, 440, 50, 50))
+stopButton = ButtonBox('res/stopButton.png', (800, 440, 50, 50))
 #gifCheckBox = CheckBox('res/gifButton.png','res/gifButton2.png',"Output GIF", (500,440,50,50))
 
 
 def updateWidgets(event):
     sizeBox.update(event)
+    loopBox.update(event)
     delayBox.update(event)
     algorithmBox.update()
     #gifCheckBox.update()
@@ -287,6 +293,7 @@ def drawBars(array, redBar1, redBar2, blueBar1, blueBar2, greenRows = {}, **kwar
 def drawBottomMenu():
     '''Draw the menu below the bars'''
     sizeBox.draw()
+    loopBox.draw()
     delayBox.draw()
     algorithmBox.draw()
     #gifCheckBox.draw()

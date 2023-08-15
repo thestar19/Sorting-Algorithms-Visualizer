@@ -1,11 +1,41 @@
-import pygame
-from random import randint
-from time import time
-from algs import algorithmsDict
-import display as display
-import os
-import imageio.v3
-import gc
+
+
+
+#Define basic trace_function
+def show_trace():
+    print("An error has occured, printing debug info:")
+    print(sys.version)
+    print(sys.version_info)
+
+#Carefully import stuff
+try:
+    import sys
+    from random import randint
+    from time import time
+    from algs import algorithmsDict
+except:
+    show_trace()
+    raise ImportError("Could not access Sys, random, time or programs sorting alg")
+
+try:
+    import pygame
+except:
+    show_trace()
+    raise ImportError("Pygame is not installed!")
+
+try:
+    import display as display
+    import os
+    import gc
+except:
+    show_trace()
+    raise ModuleNotFoundError("Could not access display, os or gc")
+try:
+    import imageio.v3
+except:
+    show_trace()
+    raise ModuleNotFoundError("Could not access imageio.v3")
+
 
 # Declared in display.py
 # 1. global variables : numBars, delay, do_sorting, paused, timer_space_bar
@@ -18,9 +48,10 @@ import gc
 # Make better number of pictures sorter
 # Create own git page with reference
 # Add log to window, stop using terminal
-# Add "speed" adjust eg FPS as option
+# Extend delay adjust to allow for more values than 0.1-0.2
 # Add more file types, eg MP4
 # Add option to print numbers in "bars"
+
 
 
 #Generating gifs requires placing files in subfolder and then loading them.
@@ -48,28 +79,38 @@ def CreateGIF(counter,SCREENSHOT_FILENAME):
         fileNames.append(SCREENSHOT_FILENAME + str(i) + ".jpg")
     images = []
     #This will start to load in individual pictures into gif engine
-    #In theory, an optimization is possible here by streaming the data in smaller batches
-    #This would save alot of memory
-    newGif = imageio.get_writer('sorting2.gif',format='GIF-PIL',mode='I',fps=100)
+    numberOfLoops = 0
+    if display.loopBox.text != "Inf":
+        numberOfLoops = int(display.loopBox.text)
+    newGif = imageio.get_writer('sorting.gif',format='GIF-PIL',mode='I',fps=30,loop=numberOfLoops)
+
+    #if delay > 0, add ratio for that delay
+    delay_ratio = 1
+    if int(display.delay*1000/30) > 0:
+        delay_ratio = int((display.delay*2*1000)/30)
+        print("Adding " + str(display.delay*2) + " ms delay for each image in GIF")
     try:
         for (counter,filename) in enumerate(fileNames):
             #images.append(imageio.v2.imread(filename))
-            newGif.append_data(imageio.v2.imread(filename))
-            if counter % 100 == 0:
-                print("Progress:" + str(counter) + "/" + str(len(fileNames)))
+            for i in range(0,delay_ratio):
+                newGif.append_data(imageio.v2.imread(filename))
+            if ((counter*delay_ratio) % 100) < 10:
+                print("Progress:" + str(int(((counter)/len(fileNames))*100)) + "%")
     except:
         raise EIO("Tried to create GIF, did not find sample pictures")
+    print("Progress:100%")
     #Output gif
     #imageio.mimsave('sorting.gif', images, format = 'GIF-PIL', fps = 100)
     #Del latest list, this does NOT decrease current RAM usage, 
     #but makes next round use the same memory area instead
     newGif.close()
+    print("Cleaning up remaining files")
     del fileNames
     for item in images:
         del item
     del images
     gc.collect()
-    print("GIF generated as sorting.gif folder")
+    print("GIF generation complete as sorting.gif")
     #Delete all files in folder
     deleteTempFiles()
     
@@ -131,16 +172,16 @@ def main():
 
             display.updateWidgets(event)
 
-        display.delay = (display.delayBox.value-display.delayBox.rect.x-6)/1000 # delay is in ms
+        #display.delay = (display.delayBox.value-display.delayBox.rect.x-6)/1000 # delay is in ms
+        display.delay = (display.delayBox.value)/1000 # delay is in ms
 
         if display.playButton.isActive: # play button clicked
             try:
                 if int(display.sizeBox.text) > 1000:
                     # This is limitation because of RAM. size = 100 needs 2GB of RAM, so 120 is for some reason significantly higher
                     print("GIF cannot be created for size > 1000")
-                elif int(display.sizeBox.text) > 1000:
-                    print("Warning: Creating a GIF for array > 500 will require more than 8GB of memory")
                 else:
+                    print("Creating animation")
                     display.do_sorting = True
                     display.playButton.isActive = False
                     current_alg = display.algorithmBox.get_active_option()
@@ -152,6 +193,7 @@ def main():
                 raise ValueError("Text in size field is not a number")
 
         if display.stopButton.isActive: # stop button clicked
+            print("Stopping animation")
             display.stopButton.isActive = False
             display.do_sorting = False
             display.paused = False
@@ -167,8 +209,8 @@ def main():
                 GIF_skip_image_counter = 0
                 
         #GIF needs it's own thing
-        screenshot = pygame.Surface(GIF_WINDOW_SIZE)
-        screenshot.blit(display.screen, (0,0))
+        #screenshot = pygame.Surface(GIF_WINDOW_SIZE)
+        #screenshot.blit(display.screen, (0,0))
         
         if display.do_sorting and not display.paused: # sorting animation
             try:
@@ -179,19 +221,15 @@ def main():
                     if True:
                         #If less then 300, take every size/100 picture
                         #ergo size = 100 => every picture, size = 300 => every third picture
-                        if int(display.sizeBox.text) <= 300:
-                            ratio = 1
-                            if int(display.sizeBox.text) >= 100:
-                                ratio = int(int(display.sizeBox.text)/100)
-                            if GIF_skip_image_counter % ratio == 0 or int(display.sizeBox.text) < 100:
-                                takePicture(SCREENSHOT_FILENAME,GIF_picture_counter,screenshot)
-                                GIF_picture_counter +=1
-                            GIF_skip_image_counter +=1
+                        if int(display.sizeBox.text) <= 200:
+                            takePicture(SCREENSHOT_FILENAME,GIF_picture_counter,display.screen)
+                            GIF_picture_counter +=1
                         #If size > 300, then we need to take draastically less pictures
                         else:
-                            if int(GIF_skip_image_counter) % int(int(display.sizeBox.text)/20) == 0:
-                                takePicture(SCREENSHOT_FILENAME,GIF_picture_counter,screenshot)
+                            if int(GIF_skip_image_counter) % int(10) == 0:
+                                takePicture(SCREENSHOT_FILENAME,GIF_picture_counter,display.screen)
                                 GIF_picture_counter +=1
+                                GIF_skip_image_counter = 0
                             GIF_skip_image_counter +=1
                     timer_delay = time()
                     
@@ -199,7 +237,17 @@ def main():
                 display.do_sorting = False
                 #If program stops because end of sorting, gif needs to be created if selected
                 if True: #Check if GIF was requested
-                    #Call function for GIF
+                    #Create green bars
+                    a_set = set(range(display.numBars))
+                    display.drawInterface(numbers, -1, -1, -1, -1, greenRows=a_set)
+                    #Make sure they are saved for a second
+                    takePicture(SCREENSHOT_FILENAME, GIF_picture_counter, display.screen)
+                    GIF_picture_counter += 1
+                    takePicture(SCREENSHOT_FILENAME, GIF_picture_counter, display.screen)
+                    GIF_picture_counter += 1
+                    takePicture(SCREENSHOT_FILENAME, GIF_picture_counter, display.screen)
+                    GIF_picture_counter += 1
+                    # Call function for GIF
                     CreateGIF(GIF_picture_counter,SCREENSHOT_FILENAME)
                     #Reset counter
                     GIF_picture_counter = 0
