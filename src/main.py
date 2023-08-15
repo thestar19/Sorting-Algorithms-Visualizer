@@ -3,7 +3,7 @@
 
 #Define basic trace_function
 def show_trace():
-    print("An error has occured, printing debug info:")
+    print("An error has occured, printing useful info:")
     print(sys.version)
     print(sys.version_info)
 
