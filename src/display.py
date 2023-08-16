@@ -6,7 +6,7 @@ from time import time
 pygame.init()
 
 # Display settings
-windowSize = (900, 500)
+windowSize = (800, 500)
 screen = pygame.display.set_mode(windowSize)
 pygame.display.set_caption('Sorting Algorithms GIF Generator')
 
@@ -52,18 +52,30 @@ class TextBox(InputBox):
     
     def draw(self):
         super().draw()
-        surface = baseFont.render(self.text, True, self.color)
-        screen.blit(surface, (self.rect.x + 10, self.rect.y + 10))
-        self.rect.w = max(surface.get_width() + 20, 50)
+        if self.name == "Log":
+            surface = baseFont.render(self.text, True, self.color)
+            screen.blit(surface, (self.rect.x + 10, self.rect.y + 10))
+        else:
+            surface = baseFont.render(self.text, True, self.color)
+            screen.blit(surface, (self.rect.x + 10, self.rect.y + 10))
+            self.rect.w = max(surface.get_width() + 20, 50)
 
     def update(self, event):
         super().update()
-        if self.isActive and event.type == pygame.KEYDOWN:
-            if   event.key == pygame.K_BACKSPACE: self.text = self.text[:-1]
-            elif event.unicode.isdigit()        : self.text += event.unicode
-        if self.text == "0":
-            self.text = "Inf"
-        
+        if self.name == "Log":
+            surface = baseFont.render(self.text, True, self.color)
+            screen.blit(surface, (self.rect.x + 10, self.rect.y + 10))
+        else:
+            if self.isActive and event.type == pygame.KEYDOWN:
+                if   event.key == pygame.K_BACKSPACE: self.text = self.text[:-1]
+                elif event.unicode.isdigit()        : self.text += event.unicode
+            if self.text == "0":
+                self.text = "Inf"
+    def writeLine(self, addition):
+        if len(addition) > 20:
+            addition = addition[0:15] + "\n" + addition[15:]
+        self.text = str(addition) + "\n" + self.text
+        self.update(None)
 
 class SlideBox(InputBox):
     def __init__(self, name, color, rect):
@@ -84,10 +96,10 @@ class SlideBox(InputBox):
         self.start  = self.rect.x + 6
         self.end    = self.rect.x + self.rect.w - 6
         self.value += self.start - previousStart
-        delay = self.value*2
+        delay = self.value
         
         if self.isActive:
-            self.name = "Delay:" + str(int(self.value)*2) + "ms"
+            self.name = "Delay:" + str(int(self.value)) + "ms"
             if self.clicked:
                 if self.start <= self.mousePos[0] <= self.end: self.value = self.mousePos[0]
         
@@ -122,17 +134,40 @@ class VerticalSliderBox(InputBox):
                 elif event.button == 5: self.value = max(self.start,self.value - 10)
 
 class ButtonBox(Box):
-    def __init__(self, img_path, rect):
+    def __init__(self, img_path, rect, myFunction="start_stop_generation"):
         super().__init__(rect)
         self.img = pygame.image.load(img_path)
-    
+        self.myFunction = myFunction
     def draw(self):
-        self.rect.x = loopBox.rect.x + loopBox.rect.w + 20
+        if self.myFunction == "start_stop_generation":
+            self.rect.x = loopBox.rect.x + loopBox.rect.w + 20
+        else:
+            self.rect.x = playButton.rect.x + playButton.rect.w + 20
         screen.blit(self.img, (self.rect.x, self.rect.y))
 
     def update(self):
-       super().update()
-       if self.isActive: self.isActive = True if self.clicked else False
+        global screen
+        global show_advanced
+        global windowSize
+        super().update()
+        if True:
+            if self.isActive: self.isActive = True if self.clicked else False
+        else:
+            if self.clicked:
+                show_advanced = False if show_advanced else True
+                if not show_advanced:
+                    showAdvancedButton.draw()
+                    if windowSize == (900, 800):
+                        windowSize = (900, 500)
+                        screen = pygame.display.set_mode(windowSize)
+                else:
+                    hideAdvancedButton.draw()
+                    if windowSize == (900, 500):
+                        windowSize = (900, 800)
+                        screen = pygame.display.set_mode(windowSize)
+
+
+
 
             
 class CheckBox(Box):
@@ -250,17 +285,21 @@ class DropdownBox(InputBox):
 numBars = 0
 delay   = 0
 do_sorting = False
+show_advanced = False
 paused = False
 timer_space_bar   = 0
 
 
 # Input Boxes
-sizeBox      = TextBox('Size', grey, (30, 440, 50, 50), '100')
-loopBox      = TextBox('Loops', grey, (400, 440, 50, 50), '0')
-delayBox     = SlideBox("Delay:" + "200" + "ms", grey, (105, 440, 112, 50))
+sizeBox      = TextBox('Size', grey, (30, 440, 50, 50), '10')
+loopBox      = TextBox('Loops', grey, (580, 440, 50, 50), '0')
+#logBox       = TextBox('Log', grey, (850, 40, 340, 400), '')
+delayBox     = SlideBox("Delay:" + "100" + "ms", grey, (105, 440, 300, 50))
 algorithmBox = DropdownBox('Algorithm', (410, 440, 140, 50), baseFont)
 playButton  = ButtonBox('res/playButton.png', (800, 440, 50, 50))
 stopButton = ButtonBox('res/stopButton.png', (800, 440, 50, 50))
+#showAdvancedButton = ButtonBox('res/playButton.png', (1000, 440, 50, 50),"show_advancedButton")
+#hideAdvancedButton = ButtonBox('res/stopButton.png', (1000, 440, 50, 50),"hide_advancedButton")
 #gifCheckBox = CheckBox('res/gifButton.png','res/gifButton2.png',"Output GIF", (500,440,50,50))
 
 
@@ -269,11 +308,17 @@ def updateWidgets(event):
     loopBox.update(event)
     delayBox.update(event)
     algorithmBox.update()
+    #logBox.update(event)
     #gifCheckBox.update()
     if do_sorting:
         stopButton.update()
     else:
         playButton.update()
+
+    #if not show_advanced:
+    #    showAdvancedButton.update()
+    #else:
+    #    hideAdvancedButton.update()
 
 
 def drawBars(array, redBar1, redBar2, blueBar1, blueBar2, greenRows = {}, **kwargs):
@@ -294,6 +339,7 @@ def drawBottomMenu():
     '''Draw the menu below the bars'''
     sizeBox.draw()
     loopBox.draw()
+    #logBox.draw()
     delayBox.draw()
     algorithmBox.draw()
     #gifCheckBox.draw()
@@ -301,6 +347,11 @@ def drawBottomMenu():
         stopButton.draw()
     else:
         playButton.draw()
+
+    #if not show_advanced:
+    #    showAdvancedButton.draw()
+    #else:
+    #    hideAdvancedButton.draw()
 
 
 def draw_rect_alpha(surface, color, rect):

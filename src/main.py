@@ -41,9 +41,9 @@ except:
 # 1. global variables : numBars, delay, do_sorting, paused, timer_space_bar
 # 2. widgets : sizeBox, delayBox, algorithmBox, playButton, stopButton
 
-
+textLog = []
+textLogUpdate = True
 #Todo:
-# Add looping option
 # Add time estimate
 # Make better number of pictures sorter
 # Create own git page with reference
@@ -52,6 +52,9 @@ except:
 # Add more file types, eg MP4
 # Add option to print numbers in "bars"
 
+#Known bugs
+# Loops & start button does not move as size increases
+# Loops box runs into log upon extreme numbers
 
 
 #Generating gifs requires placing files in subfolder and then loading them.
@@ -69,10 +72,93 @@ def deleteTempFiles():
             os.rmdir("pictures/" + directories)
     except:
         raise EIO("Could not delete files in subfolder!")
+#types:
+#1=white text, just usual log
+#2=progress bar change
+
+def printL(type,addition):
+    global textLog
+    global textLogUpdate
+    textLogUpdate = True
+    textLog.insert(1,(type,addition))
+
+def printProgress(progress):
+    global textLog
+    global textLogUpdate
+    textLogUpdate = True
+    textLog.insert(0,(2,progress))
+
+def printProgressBar(currentValue):
+    print("Progress:" +  str(currentValue) + "%")
+    print("""[""",end="")
+    for i in range(0,int(currentValue),10):
+        print("""#""",end="")
+    print("""]""")
+
+
+
+def printSign():
+    print("""
+ _______         _______         _______ 
+(  ____ \       (  ___  )       (  ____ |
+| (    \/       | (   ) |       | (    \/
+| (_____  _____ | (___) | _____ | |      
+(_____  )(_____)|  ___  |(_____)| | ____ 
+      ) |       | (   ) |       | | \_  )
+/\____) |       | )   ( |       | (___) |
+\_______)       |/     \|       (_______)
+                                         """)
+
+def findType(findType):
+    global textLog
+    for type,value in textLog:
+        if type == findType:
+            return True
+    return False
+
+def deleteType(theType):
+    global textLog
+    counter = 0
+    while True:
+        if counter > len(textLog):
+            return True
+        type,value = textLog[counter]
+        if type == theType:
+            textLog.pop(counter)
+            counter = counter-3
+
+
+def updateDisplay():
+    global textLog
+    global textLogUpdate
+    if not textLogUpdate:
+        return -1
+    textLogUpdate = False
+    #runTime = time.strftime("%H:%M:%S", time.localtime(time.time() - startUpTime - 60 * 60))
+    os.system("clear")
+    printSign()
+    #print(str(runTime))
+    if len(textLog) > 50:
+        for i in range(0,25):
+            textLog.pop()
+    maxProgress = -1
+    for type,value in textLog:
+        if type == 2:
+            if value > maxProgress:
+                maxProgress = value
+    if -1 < maxProgress < 100:
+        printProgressBar(maxProgress)
+        print("--------------------------------------------")
+    if maxProgress >= 100:
+        deleteType(2)
+    for type,value in textLog:
+        if type != 2:
+            print(value)
 
 def CreateGIF(counter,SCREENSHOT_FILENAME):
+    updateDisplay()
     #Idea is that pictures are generated with numbers 0 to some MAX
-    print("Trying to generate GIF, this may freeze the program and take a while")
+    printL(1,"Trying to generate GIF, this may freeze the program and take a while")
     #Find max
     fileNames = [] #Okay, let's start preparing for GIF
     for i in range(0,counter):
@@ -88,31 +174,33 @@ def CreateGIF(counter,SCREENSHOT_FILENAME):
     delay_ratio = 1
     if int(display.delay*1000/30) > 0:
         delay_ratio = int((display.delay*2*1000)/30)
-        print("Adding " + str(display.delay*2) + " ms delay for each image in GIF")
+        printL(1,("Adding " + str(display.delay) + " ms delay for each image in GIF"))
     try:
         for (counter,filename) in enumerate(fileNames):
+            updateDisplay()
             #images.append(imageio.v2.imread(filename))
             for i in range(0,delay_ratio):
                 newGif.append_data(imageio.v2.imread(filename))
-            if ((counter*delay_ratio) % 100) < 10:
-                print("Progress:" + str(int(((counter)/len(fileNames))*100)) + "%")
+            printProgress(int(((counter)/len(fileNames))*100))
     except:
         raise EIO("Tried to create GIF, did not find sample pictures")
-    print("Progress:100%")
+    printProgress(100)
+    updateDisplay()
     #Output gif
     #imageio.mimsave('sorting.gif', images, format = 'GIF-PIL', fps = 100)
     #Del latest list, this does NOT decrease current RAM usage, 
     #but makes next round use the same memory area instead
     newGif.close()
-    print("Cleaning up remaining files")
+    printL(1,("Cleaning up remaining files"))
     del fileNames
     for item in images:
         del item
     del images
     gc.collect()
-    print("GIF generation complete as sorting.gif")
+    printL(1,("GIF generation complete as sorting.gif"))
     #Delete all files in folder
     deleteTempFiles()
+    updateDisplay()
     
     
 def getMaxNumber(files):
@@ -139,6 +227,8 @@ def createPicturesFolder():
         raise Exception("Could not create pictures folder")
     
 def main():
+    updateDisplay()
+    printL(1,"Loading complete")
     SCREENSHOT_FILENAME = "pictures/screenshot" #+ a counter number + JPG
     GIF_WINDOW_SIZE = (900, 400)
     
@@ -179,9 +269,9 @@ def main():
             try:
                 if int(display.sizeBox.text) > 1000:
                     # This is limitation because of RAM. size = 100 needs 2GB of RAM, so 120 is for some reason significantly higher
-                    print("GIF cannot be created for size > 1000")
+                    printL(1,("GIF cannot be created for size > 1000"))
                 else:
-                    print("Creating animation")
+                    printL(1,("Creating animation"))
                     display.do_sorting = True
                     display.playButton.isActive = False
                     current_alg = display.algorithmBox.get_active_option()
@@ -193,7 +283,7 @@ def main():
                 raise ValueError("Text in size field is not a number")
 
         if display.stopButton.isActive: # stop button clicked
-            print("Stopping animation")
+            printL(1,("Stopping animation"))
             display.stopButton.isActive = False
             display.do_sorting = False
             display.paused = False
@@ -214,7 +304,7 @@ def main():
         
         if display.do_sorting and not display.paused: # sorting animation
             try:
-                if time()-timer_delay >= display.delay:
+                if True:
                     numbers, redBar1, redBar2, blueBar1, blueBar2 = next(alg_iterator)
                     display.drawInterface(numbers, redBar1, redBar2, blueBar1, blueBar2)
                     #If GIF is to be output, a picture needs to be generated and saved temporarily
